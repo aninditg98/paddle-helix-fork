@@ -164,14 +164,14 @@ def prediction_to_mmcif(pred_atom_pos: Union[np.ndarray, paddle.Tensor],
     - maxit_binary: path to maxit_binary, use to convert pdb to cif
     - mmcif_path: path to save *.cif
   """
-  assert maxit_binary is not None and os.path.exists(maxit_binary), (
-      f'maxit_binary: {maxit_binary} not exists. '
-      f'link: https://sw-tools.rcsb.org/apps/MAXIT/source.html')
+#   assert maxit_binary is not None and os.path.exists(maxit_binary), (
+#       f'maxit_binary: {maxit_binary} not exists. '
+#       f'link: https://sw-tools.rcsb.org/apps/MAXIT/source.html')
   assert mmcif_path.endswith('.cif'), f'mmcif_path should endswith .cif; got {mmcif_path}'
 
   pdb_path = mmcif_path.replace('.cif', '.pdb')
   pdb_path = prediction_to_pdb(pred_atom_pos, FeatsDict, pdb_path)
-  msg = os.system(f'{maxit_binary} -i {pdb_path} -o 1 -output {mmcif_path}')
+  msg = os.system(f'structconvert -PDBx {pdb_path} {mmcif_path}')
   if msg != 0:
     print(f'convert pdb to cif failed, error message: {msg}')
   return mmcif_path

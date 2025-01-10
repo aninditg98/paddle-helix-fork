@@ -13,8 +13,8 @@ def try_creating_msa_features(folder):
     msa_features = make_msa_features((uniref90_msa, bfd_msa, mgnify_msa))
 
 if __name__ == '__main__':
-    internal_xtal_folder = "/home/anindit/paddle-helix-fork/apps/protein_folding/helixfold3/output/row-0/msas/protein_A/A"
-    posebuster_folder = "/home/anindit/deep-affinity/experimental/users/anindit/posebuster_5SAK_ZRY"
+    # internal_xtal_folder = "/home/anindit/paddle-helix-fork/apps/protein_folding/helixfold3/output/row-0/msas/protein_A/A"
+    posebuster_folder = "/home/anindit/deep-affinity/experimental/users/anindit/posebuster_5SAK_ZRY/sto"
     msa_features = try_creating_msa_features(posebuster_folder)
     
     

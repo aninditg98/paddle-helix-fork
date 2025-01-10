@@ -467,24 +467,7 @@ def main(args):
     msa_templ_data_pipeline_dict = get_msa_templates_pipeline(args)
         
 
-    ### create model
-    model_config = config.model_config(args.model_name)
-    print(f'>>> model_config:\n{model_config}')
-
-    model = RunModel(model_config)
-
-    if (not args.init_model is None) and (not args.init_model == ""):
-        print(f"Load pretrain model from {args.init_model}")
-        pd_params = paddle.load(args.init_model)
-        
-        has_opt = 'optimizer' in pd_params
-        if has_opt:
-            model.helixfold.set_state_dict(pd_params['model'])
-        else:
-            model.helixfold.set_state_dict(pd_params)
     
-    if args.precision == "bf16" and args.amp_level == "O2":
-        raise NotImplementedError("bf16 O2 is not supported yet.")
 
     print(f"============ Data Loading ============")
     job_base = pathlib.Path(args.input_json).stem
@@ -505,6 +488,27 @@ def main(args):
 
     feature_dict['feat'] = batch_convert(feature_dict['feat'], add_batch=True)
     feature_dict['label'] = batch_convert(feature_dict['label'], add_batch=True)
+    
+    return
+    print(f"============ Model Loading ============")
+    ### create model
+    model_config = config.model_config(args.model_name)
+    print(f'>>> model_config:\n{model_config}')
+
+    model = RunModel(model_config)
+
+    if (not args.init_model is None) and (not args.init_model == ""):
+        print(f"Load pretrain model from {args.init_model}")
+        pd_params = paddle.load(args.init_model)
+        
+        has_opt = 'optimizer' in pd_params
+        if has_opt:
+            model.helixfold.set_state_dict(pd_params['model'])
+        else:
+            model.helixfold.set_state_dict(pd_params)
+    
+    if args.precision == "bf16" and args.amp_level == "O2":
+        raise NotImplementedError("bf16 O2 is not supported yet.")
     
     print(f"============ Start Inference ============")
     

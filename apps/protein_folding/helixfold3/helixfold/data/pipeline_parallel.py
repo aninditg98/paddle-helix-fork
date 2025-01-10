@@ -62,6 +62,8 @@ def make_msa_features(msas: Sequence[parsers.Msa]) -> FeatureDict:
   for msa_index, msa in enumerate(msas):
     if not msa:
       raise ValueError(f'MSA {msa_index} must contain at least one sequence.')
+  
+    print("MSA SEQUENCE LENGTH", len(msa.sequences))
     for sequence_index, sequence in enumerate(msa.sequences):
       if sequence in seen_sequences:
         continue
@@ -239,40 +241,40 @@ class DataPipeline:
         except Exception as exc:
           print(f'Task {task} generated an exception : {exc}')
 
-    msa_for_templates = msa_results['uniref90']['sto']
-    msa_for_templates = parsers.deduplicate_stockholm_msa(msa_for_templates)
-    msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(msa_for_templates)
+    # msa_for_templates = msa_results['uniref90']['sto']
+    # msa_for_templates = parsers.deduplicate_stockholm_msa(msa_for_templates)
+    # msa_for_templates = parsers.remove_empty_columns_from_stockholm_msa(msa_for_templates)
 
-    if self.template_searcher.input_format == 'sto':
-      pdb_templates_result = self.template_searcher.query(msa_for_templates)
-    elif self.template_searcher.input_format == 'a3m':
-      uniref90_msa_as_a3m = parsers.convert_stockholm_to_a3m(msa_for_templates)
-      pdb_templates_result = self.template_searcher.query(uniref90_msa_as_a3m)
-    else:
-      raise ValueError('Unrecognized template input format: '
-                       f'{self.template_searcher.input_format}')
+    # if self.template_searcher.input_format == 'sto':
+    #   pdb_templates_result = self.template_searcher.query(msa_for_templates)
+    # elif self.template_searcher.input_format == 'a3m':
+    #   uniref90_msa_as_a3m = parsers.convert_stockholm_to_a3m(msa_for_templates)
+    #   pdb_templates_result = self.template_searcher.query(uniref90_msa_as_a3m)
+    # else:
+    #   raise ValueError('Unrecognized template input format: '
+    #                    f'{self.template_searcher.input_format}')
 
-    pdb_hits_out_path = os.path.join(
-        msa_output_dir, f'pdb_hits.{self.template_searcher.output_format}')
-    with open(pdb_hits_out_path, 'w') as f:
-      f.write(pdb_templates_result)
+    # pdb_hits_out_path = os.path.join(
+    #     msa_output_dir, f'pdb_hits.{self.template_searcher.output_format}')
+    # with open(pdb_hits_out_path, 'w') as f:
+    #   f.write(pdb_templates_result)
 
     uniref90_msa = parsers.parse_stockholm(msa_results['uniref90']['sto'])
     mgnify_msa = parsers.parse_stockholm(msa_results['mgnify']['sto'])
 
-    pdb_template_hits = self.template_searcher.get_template_hits(
-        output_string=pdb_templates_result, input_sequence=input_sequence)
+    # pdb_template_hits = self.template_searcher.get_template_hits(
+    #     output_string=pdb_templates_result, input_sequence=input_sequence)
 
     if self._use_small_bfd:
         bfd_msa = parsers.parse_stockholm(msa_results['small_bfd']['sto'])
     else:
         raise ValueError("Doesn't support full BFD yet.")
 
-    templates_result = self.template_featurizer.get_templates(
-        query_sequence=input_sequence,
-        hits=pdb_template_hits,
-        query_pdb_code=None,
-        query_release_date=None)
+    # templates_result = self.template_featurizer.get_templates(
+    #     query_sequence=input_sequence,
+    #     hits=pdb_template_hits,
+    #     query_pdb_code=None,
+    #     query_release_date=None)
 
     sequence_features = make_sequence_features(
         sequence=input_sequence,
@@ -286,8 +288,9 @@ class DataPipeline:
     logging.info('MGnify MSA size: %d sequences.', len(mgnify_msa))
     logging.info('Final (deduplicated) MSA size: %d sequences.',
                  msa_features['num_alignments'][0])
-    logging.info('Total number of templates (NB: this can include bad '
-                 'templates and is later filtered to top 4): %d.',
-                 templates_result.features['template_domain_names'].shape[0])
+    # logging.info('Total number of templates (NB: this can include bad '
+    #              'templates and is later filtered to top 4): %d.',
+    #              templates_result.features['template_domain_names'].shape[0])
 
-    return {**sequence_features, **msa_features, **templates_result.features}
+    # return {**sequence_features, **msa_features, **templates_result.features}
+    return {**sequence_features, **msa_features}

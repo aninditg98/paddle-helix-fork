@@ -116,7 +116,7 @@ class Hmmbuild(object):
           output_hmm_path,
           input_query,
       ])
-
+      print("in hmmbuild?")
       logging.info('Launching subprocess %s', cmd)
       process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)

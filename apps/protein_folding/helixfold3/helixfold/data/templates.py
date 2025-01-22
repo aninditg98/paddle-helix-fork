@@ -29,7 +29,7 @@ from helixfold.data import mmcif_parsing
 from helixfold.data import parsers
 from helixfold.data.tools import kalign
 import numpy as np
-
+from utils import gcs
 
 class Error(Exception):
   """Base class for exceptions."""
@@ -767,21 +767,27 @@ def _process_single_hit(
   # remove gaps (which regardless have a missing confidence score).
   template_sequence = hit.hit_sequence.replace('-', '')
 
-  cif_path = os.path.join(mmcif_dir, hit_pdb_code + '.cif')
-  cif_gz_path = os.path.join(mmcif_dir, hit_pdb_code[1:3], hit_pdb_code + '.cif.gz')
-  if os.path.exists(cif_path):
-    logging.debug('Reading PDB entry from %s. Query: %s, template: %s', cif_path,
-                  query_sequence, template_sequence)
+  # CHANGE - instead of using the local path, download from GCS
+  gcs_cif_path = f"{mmcif_dir}/{hit_pdb_code}.cif"
+  logging.debug('Reading PDB entry from %s. Query: %s, template: %s', gcs_cif_path, query_sequence, template_sequence)
+  cif_path = gcs.get_cloud_file(gcs_cif_path)
+  cif_string = _read_file(cif_path)
+  
+  # cif_path = os.path.join(mmcif_dir, hit_pdb_code + '.cif')
+  # cif_gz_path = os.path.join(mmcif_dir, hit_pdb_code[1:3], hit_pdb_code + '.cif.gz')
+  # if os.path.exists(cif_path):
+  #   logging.debug('Reading PDB entry from %s. Query: %s, template: %s', cif_path,
+  #                 query_sequence, template_sequence)
 
-    # Fail if we can't find the mmCIF file.
-    cif_string = _read_file(cif_path)
-  elif os.path.exists(cif_gz_path):
-    with gzip.open(cif_gz_path, 'rb') as f:
-      cif_string = f.read().decode('utf-8')
+  #   # Fail if we can't find the mmCIF file.
+  #   cif_string = _read_file(cif_path)
+  # elif os.path.exists(cif_gz_path):
+  #   with gzip.open(cif_gz_path, 'rb') as f:
+  #     cif_string = f.read().decode('utf-8')
 
   parsing_result = mmcif_parsing.parse(
       file_id=hit_pdb_code, mmcif_string=cif_string)
-
+  
   if parsing_result.mmcif_object is not None:
     hit_release_date = datetime.datetime.strptime(
         parsing_result.mmcif_object.header['release_date'], '%Y-%m-%d')
@@ -817,7 +823,7 @@ def _process_single_hit(
           TemplateAtomMaskAllZerosError) as e:
     # These 3 errors indicate missing mmCIF experimental data rather than a
     # problem with the template search, so turn them into warnings.
-    warning = ('%s_%s (sum_probs: %s, rank: %s): feature extracting errors: '
+    warning = ('%s_%s (sum_probs: %.2f, rank: %d): feature extracting errors: '
                '%s, mmCIF parsing errors: %s'
                % (hit_pdb_code, hit_chain_id, hit.sum_probs, hit.index,
                   str(e), parsing_result.errors))
@@ -826,7 +832,7 @@ def _process_single_hit(
     else:
       return SingleHitResult(features=None, error=None, warning=warning)
   except Error as e:
-    error = ('%s_%s (sum_probs: %s, rank: %s): feature extracting errors: '
+    error = ('%s_%s (sum_probs: %.2f, rank: %d): feature extracting errors: '
              '%s, mmCIF parsing errors: %s'
              % (hit_pdb_code, hit_chain_id, hit.sum_probs, hit.index,
                 str(e), parsing_result.errors))
@@ -845,6 +851,7 @@ class TemplateHitFeaturizer(abc.ABC):
 
   def __init__(
       self,
+      # CHANGE - instead of using the local path, download from GCS
       mmcif_dir: str,
       max_template_date: str,
       max_hits: int,
@@ -875,12 +882,15 @@ class TemplateHitFeaturizer(abc.ABC):
         * If any template is a duplicate of the query.
         * Any feature computation errors.
     """
+    ...
+    # self._mmcif_dir = mmcif_dir
+    # has_cif = glob.glob(os.path.join(self._mmcif_dir, '*.cif'))
+    # has_cif_gz = glob.glob(os.path.join(self._mmcif_dir, '*', '*.cif.gz'))
+    # if (not has_cif) and (not has_cif_gz):
+    #   logging.error('Could not find CIFs in %s', self._mmcif_dir)
+    #   raise ValueError(f'Could not find CIFs in {self._mmcif_dir}')
+    
     self._mmcif_dir = mmcif_dir
-    has_cif = glob.glob(os.path.join(self._mmcif_dir, '*.cif'))
-    has_cif_gz = glob.glob(os.path.join(self._mmcif_dir, '*', '*.cif.gz'))
-    if (not has_cif) and (not has_cif_gz):
-      logging.error('Could not find CIFs in %s', self._mmcif_dir)
-      raise ValueError(f'Could not find CIFs in {self._mmcif_dir}')
 
     try:
       self._max_template_date = datetime.datetime.strptime(
@@ -953,7 +963,7 @@ class HmmsearchHitFeaturizer(TemplateHitFeaturizer):
       # We got all the templates we wanted, stop processing hits.
       if len(already_seen) >= self._max_hits:
         break
-
+    
       result = _process_single_hit(
           query_sequence=query_sequence,
           query_pdb_code=query_pdb_code,

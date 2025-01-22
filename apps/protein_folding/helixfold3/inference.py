@@ -34,9 +34,9 @@ from helixfold.data import pipeline_rna_multimer
 from helixfold.data.utils import atom_level_keys, map_to_continuous_indices
 from helixfold.data.tools import hmmsearch
 from helixfold.data import templates
-from utils.utils import get_custom_amp_list
-from utils.model import RunModel
-from utils.misc import set_logging_level
+from thirdparty.helixfold3.helixfold_utils.utils import get_custom_amp_list
+from thirdparty.helixfold3.helixfold_utils.model import RunModel
+from thirdparty.helixfold3.helixfold_utils.misc import set_logging_level
 from typing import Dict
 from infer_scripts import feature_processing_aa, preprocess
 from infer_scripts.tools import mmcif_writer
@@ -166,10 +166,14 @@ def ranking_all_predictions(output_dirs):
 
     ranked_map = dict(sorted(ranking_score_path_map.items(), key=lambda x: x[1], reverse=True))
     rank_id = 1
+    print(output_dirs)
+    print(ranked_map)
     for outpath, rank_score in ranked_map.items():
         logger.debug("[ranking_all_predictions] Ranking score of %s: %.5f", outpath, rank_score)
         basename_prefix = os.path.basename(outpath).split('-pred-')[0]
+        print("got basename-prefix:", basename_prefix)
         target_path = os.path.join(os.path.dirname(outpath), f'{basename_prefix}-rank{rank_id}')
+        print('got target_path:', target_path)
         if os.path.exists(target_path) and os.path.isdir(target_path):
             shutil.rmtree(target_path)
         shutil.copytree(outpath, target_path)

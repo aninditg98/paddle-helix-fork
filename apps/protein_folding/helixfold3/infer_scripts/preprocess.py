@@ -66,7 +66,7 @@ ERROR_CODES = {
     3: 'Unknown error.'
 }
 
-OBABEL_BIN = os.getenv('OBABEL_BIN')
+OBABEL_BIN = os.environ["OBABEL_BIN"]
 if not os.path.exists(OBABEL_BIN):
     raise FileNotFoundError(f'Cannot find obabel binary at {OBABEL_BIN}.')
 
